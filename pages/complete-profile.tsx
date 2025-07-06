@@ -30,6 +30,26 @@ export default function CompleteProfile() {
     label: spec,
   }));
 
+  const inputStyle = {
+    width: '100%',
+    padding: '10px',
+    fontSize: '1rem',
+    border: '1px solid #ccc',
+    borderRadius: '6px',
+    marginBottom: '1rem',
+  };
+
+  const buttonStyle = {
+    width: '100%',
+    padding: '10px',
+    fontSize: '1rem',
+    backgroundColor: '#0070f3',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+  };
+
   useEffect(() => {
     const getUser = async () => {
       const { data: userData } = await supabase.auth.getUser();
@@ -85,7 +105,8 @@ export default function CompleteProfile() {
 
   return (
     <main style={{ maxWidth: '600px', margin: '2rem auto' }}>
-      <h1>Заповнення профілю</h1>
+      <h1 style={{ textAlign: 'center' }}>Заповнення профілю</h1>
+
       <form onSubmit={handleSubmit}>
         <label>Ім’я:</label>
         <input
@@ -93,18 +114,21 @@ export default function CompleteProfile() {
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
           required
-        /><br /><br />
+          style={inputStyle}
+        />
 
         {role === 'doctor' && (
           <>
             <label>Спеціалізація:</label>
-            <Select
-              options={specializationOptions}
-              value={specializationOptions.find((o) => o.value === specialization)}
-              onChange={(selected) => setSpecialization(selected?.value || '')}
-              placeholder="Оберіть спеціалізацію..."
-              isSearchable
-            /><br /><br />
+            <div style={{ marginBottom: '1rem' }}>
+              <Select
+                options={specializationOptions}
+                value={specializationOptions.find((o) => o.value === specialization)}
+                onChange={(selected) => setSpecialization(selected?.value || '')}
+                placeholder="Оберіть спеціалізацію..."
+                isSearchable
+              />
+            </div>
 
             <label>Про себе:</label>
             <textarea
@@ -112,18 +136,20 @@ export default function CompleteProfile() {
               onChange={(e) => setAbout(e.target.value)}
               rows={4}
               required
-            /><br /><br />
+              style={{ ...inputStyle, resize: 'vertical' }}
+            />
 
             <label>Фото:</label>
             <input
               type="file"
               accept="image/*"
               onChange={(e) => setPhoto(e.target.files?.[0] || null)}
-            /><br /><br />
+              style={inputStyle}
+            />
           </>
         )}
 
-        <button type="submit">Зберегти</button>
+        <button type="submit" style={buttonStyle}>Зберегти</button>
       </form>
     </main>
   );

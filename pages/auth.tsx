@@ -2,6 +2,26 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useRouter } from 'next/router';
 
+const inputStyle = {
+  width: '100%',
+  padding: '10px',
+  fontSize: '1rem',
+  border: '1px solid #ccc',
+  borderRadius: '6px',
+  marginBottom: '1rem',
+};
+
+const buttonStyle = {
+  width: '100%',
+  padding: '10px',
+  fontSize: '1rem',
+  backgroundColor: '#0070f3',
+  color: '#fff',
+  border: 'none',
+  borderRadius: '6px',
+  cursor: 'pointer',
+};
+
 export default function AuthPage() {
   return (
     <main style={{ padding: '2rem' }}>
@@ -17,7 +37,7 @@ export default function AuthPage() {
           marginInline: 'auto',
         }}
       >
-        <div style={{ flex: 1, borderRight: '1px solid #ccc', paddingRight: '1rem' }}>
+        <div style={{ flex: 1, borderRight: '1px solid #ddd', paddingRight: '1rem' }}>
           <h2>Увійти</h2>
           <LoginForm />
         </div>
@@ -35,21 +55,19 @@ function LoginForm() {
   return (
     <form>
       <label>Email:</label>
-      <input type="email" name="email" required /><br /><br />
+      <input type="email" name="email" required style={inputStyle} />
 
       <label>Пароль:</label>
-      <input type="password" name="password" required /><br /><br />
+      <input type="password" name="password" required style={inputStyle} />
 
-      <button type="submit">Увійти</button>
+      <button type="submit" style={buttonStyle}>Увійти</button>
 
       <p style={{ marginTop: '1rem' }}>
-  <a href="/reset-password">Забули пароль?</a>
-</p>
-
+        <a href="/reset-password">Забули пароль?</a>
+      </p>
     </form>
   );
 }
-
 
 function RegisterForm() {
   const [email, setEmail] = useState('');
@@ -63,11 +81,7 @@ function RegisterForm() {
     setLoading(true);
 
     try {
-      // 1. Реєстрація через Supabase
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      const { data, error } = await supabase.auth.signUp({ email, password });
 
       if (error || !data.user) {
         alert('❌ Помилка: ' + (error?.message || 'Користувача не створено.'));
@@ -77,14 +91,12 @@ function RegisterForm() {
 
       const userId = data.user.id;
 
-      // 2. Записуємо роль у таблицю users
-   const { error: insertError } = await supabase.from('users').insert({
-  id: userId,
-  email: email, // ✅ додаємо email
-  role: role,
-  created_at: new Date().toISOString(),
-  });
-
+      const { error: insertError } = await supabase.from('users').insert({
+        id: userId,
+        email,
+        role,
+        created_at: new Date().toISOString(),
+      });
 
       if (insertError) {
         alert('❌ Не вдалося зберегти роль: ' + insertError.message);
@@ -92,7 +104,6 @@ function RegisterForm() {
         return;
       }
 
-      // 3. Перенаправлення
       router.push('/complete-profile');
     } finally {
       setLoading(false);
@@ -107,7 +118,8 @@ function RegisterForm() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
-      /><br /><br />
+        style={inputStyle}
+      />
 
       <label>Пароль:</label>
       <input
@@ -115,20 +127,22 @@ function RegisterForm() {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
-      /><br /><br />
+        style={inputStyle}
+      />
 
       <label>Роль:</label>
       <select
         value={role}
         onChange={(e) => setRole(e.target.value)}
         required
+        style={inputStyle}
       >
         <option value="">Оберіть роль</option>
         <option value="patient">Пацієнт</option>
         <option value="doctor">Лікар</option>
-      </select><br /><br />
+      </select>
 
-      <button type="submit" disabled={loading}>
+      <button type="submit" disabled={loading} style={buttonStyle}>
         {loading ? 'Реєстрація...' : 'Зареєструватися'}
       </button>
     </form>

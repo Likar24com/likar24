@@ -9,7 +9,7 @@ export default function ResetPassword() {
     e.preventDefault();
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'http://localhost:3000/update-password',
+      redirectTo: 'http://localhost:3000/update-password', // замінити на продакшн-URL при деплої
     });
 
     if (error) {
@@ -19,9 +19,31 @@ export default function ResetPassword() {
     }
   };
 
+  const inputStyle = {
+    width: '100%',
+    padding: '10px',
+    fontSize: '1rem',
+    border: '1px solid #ccc',
+    borderRadius: '6px',
+    marginBottom: '1.5rem',
+  };
+
+  const buttonStyle = {
+    width: '100%',
+    padding: '10px',
+    fontSize: '1rem',
+    backgroundColor: '#0070f3',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+  };
+
   return (
     <main style={{ maxWidth: '400px', margin: '2rem auto' }}>
-      <h2>Відновлення паролю</h2>
+      <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        🔐 Відновлення паролю
+      </h2>
       <form onSubmit={handleReset}>
         <label>Email:</label>
         <input
@@ -29,11 +51,17 @@ export default function ResetPassword() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-        /><br /><br />
+          style={inputStyle}
+        />
 
-        <button type="submit">Надіслати інструкцію</button>
+        <button type="submit" style={buttonStyle}>
+          Надіслати інструкцію
+        </button>
       </form>
-      {message && <p style={{ marginTop: '1rem' }}>{message}</p>}
+
+      {message && (
+        <p style={{ marginTop: '1.5rem', textAlign: 'center' }}>{message}</p>
+      )}
     </main>
   );
 }

@@ -21,9 +21,31 @@ export default function UpdatePassword() {
     }
   };
 
+  const inputStyle = {
+    width: '100%',
+    padding: '10px',
+    fontSize: '1rem',
+    border: '1px solid #ccc',
+    borderRadius: '6px',
+    marginBottom: '1.5rem',
+  };
+
+  const buttonStyle = {
+    width: '100%',
+    padding: '10px',
+    fontSize: '1rem',
+    backgroundColor: '#0070f3',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+  };
+
   return (
     <main style={{ maxWidth: '400px', margin: '2rem auto' }}>
-      <h2>Введіть новий пароль</h2>
+      <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        🔑 Зміна паролю
+      </h2>
       <form onSubmit={handleUpdate}>
         <label>Новий пароль:</label>
         <input
@@ -31,9 +53,12 @@ export default function UpdatePassword() {
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           required
-        /><br /><br />
+          style={inputStyle}
+        />
 
-        <button type="submit">Змінити пароль</button>
+        <button type="submit" style={buttonStyle}>
+          Змінити пароль
+        </button>
       </form>
     </main>
   );
