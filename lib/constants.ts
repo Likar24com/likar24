@@ -1,37 +1,28 @@
-// Країни
+// lib/constants.ts
 export const countryOptions = [
-  { value: 'UA', label: 'Україна' },
-  { value: 'US', label: 'США' },
-  { value: 'CA', label: 'Канада' },
-  { value: 'DE', label: 'Німеччина' },
-  { value: 'FR', label: 'Франція' },
-  { value: 'OT', label: 'Інша' },
-];
-
-// алергени
-export const allergyOptions = [
-  { value: 'gluten',      label: 'Цільнозернові (глютен)' },
-  { value: 'crustaceans', label: 'Ракоподібні (морепродукти)' },
-  { value: 'eggs',        label: 'Яйця' },
-  { value: 'fish',        label: 'Риба' },
-  { value: 'peanuts',     label: 'Арахіс' },
-  { value: 'soybeans',    label: 'Соєві боби' },
-  { value: 'milk',        label: 'Молоко (включно з лактозою)' },
-  { value: 'nuts',        label: 'Горіхи' },
-  { value: 'almonds',     label: '— Мигдаль' },
-  { value: 'hazelnuts',   label: '— Ліщинник' },
-  { value: 'walnuts',     label: '— Волоські горіхи' },
-  { value: 'cashews',     label: '— Кеш’ю' },
-  { value: 'pecans',      label: '— Пекан' },
-  { value: 'brazil_nuts', label: '— Бразильський горіх' },
-  { value: 'pistachios',  label: '— Фісташки' },
-  { value: 'macadamia',   label: '— Макдамія' },
-  { value: 'celery',      label: 'Селера' },
-  { value: 'mustard',     label: 'Гірчиця' },
-  { value: 'sesame',      label: 'Сезам' },
-  { value: 'sulphites',   label: 'Сульфіти' },
-  { value: 'lupin',       label: 'Люпин' },
-  { value: 'molluscs',    label: 'Молюски' },
-  { value: 'other',       label: 'Інші' },
+  { value: 'ua', label: 'Україна' },
+  { value: 'us', label: 'США' },
+  { value: 'ca', label: 'Канада' },
+  { value: 'de', label: 'Німеччина' },
+  { value: 'fr', label: 'Франція' },
+  { value: 'pl', label: 'Польща' },
+  { value: 'it', label: 'Італія' },
+  { value: 'es', label: 'Іспанія' },
+  { value: 'gb', label: 'Велика Британія' },
+  { value: 'other', label: 'Інша' },
 ]
 
+export const allergyOptions = [
+  { value: 'peanuts',   label: 'Арахіс' },
+  { value: 'shellfish', label: 'Морепродукти' },
+  { value: 'gluten',    label: 'Глютен' },
+  { value: 'lactose',   label: 'Лактоза' },
+  { value: 'pollen',    label: 'Пилок' },
+  { value: 'soy',       label: 'Соя' },
+  { value: 'egg',       label: 'Яйця' },
+  { value: 'tree_nuts', label: 'Горіхи' },
+  { value: 'fish',      label: 'Риба' },
+  { value: 'wheat',     label: 'Пшениця' },
+  { value: 'sesame',    label: 'Кунжут' },
+  { value: 'other',     label: 'Інші' },
+]
