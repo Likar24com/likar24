@@ -127,7 +127,6 @@ function RegisterForm() {
     e.preventDefault()
     setError(null)
 
-    // 1) Просте клієнтське валідування
     if (!EMAIL_REGEX.test(email)) {
       setError('Будь ласка, введіть коректний e-mail')
       return
@@ -142,7 +141,6 @@ function RegisterForm() {
     }
 
     setLoading(true)
-    // 2) Створюємо обліковий запис
     const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
     if (signUpError || !data.user) {
       setLoading(false)
@@ -150,16 +148,10 @@ function RegisterForm() {
       return
     }
 
-    // 3) Записуємо додаткові дані в таблицю users
     const userId = data.user.id
     const { error: insertError } = await supabase
       .from('users')
-      .insert({
-        id: userId,
-        email,
-        role,
-        created_at: new Date().toISOString(),
-      })
+      .insert({ id: userId, email, role, created_at: new Date().toISOString() })
     setLoading(false)
 
     if (insertError) {
@@ -167,7 +159,6 @@ function RegisterForm() {
       return
     }
 
-    // 4) Переходимо до заповнення профілю
     if (role === 'patient') {
       router.push('/complete-patient')
     } else {
