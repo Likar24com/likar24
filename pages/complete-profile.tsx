@@ -10,7 +10,7 @@ export default function CompleteProfile() {
   // Спільні
   const [firstName, setFirstName] = useState('');
 
-  // Поля пацієнта
+  // Пацієнт
   const [lastName, setLastName] = useState('');
   const [middleName, setMiddleName] = useState('');
   const [birthDate, setBirthDate] = useState('');
@@ -19,14 +19,15 @@ export default function CompleteProfile() {
   const [allergies, setAllergies] = useState<any[]>([]);
   const [chronicDiseases, setChronicDiseases] = useState('');
 
-  // Поля лікаря
+  // Лікар
   const [specialization, setSpecialization] = useState('');
   const [about, setAbout] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
 
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
   const router = useRouter();
 
-  // Опції для селектів
   const specializationOptions = [
     'Терапевт','Кардіолог','Педіатр','Дерматолог','Невролог',
     'Офтальмолог','Хірург','Гінеколог','Стоматолог','Психотерапевт',
@@ -40,27 +41,17 @@ export default function CompleteProfile() {
     'Пилок','Медикаменти','Глютен','Горіхи','Молочні продукти','Морепродукти',
   ].map((a) => ({ value: a, label: a }));
 
-  // Стилі
   const inputStyle = {
-    width: '100%',
-    padding: '10px',
-    fontSize: '1rem',
-    border: '1px solid #ccc',
-    borderRadius: '6px',
-    marginBottom: '1rem',
-  };
-  const buttonStyle = {
-    width: '100%',
-    padding: '10px',
-    fontSize: '1rem',
-    backgroundColor: '#0070f3',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
+    width: '100%', padding: '10px', fontSize: '1rem',
+    border: '1px solid #ccc', borderRadius: '6px', marginBottom: '4px',
   };
 
-  // Завантажуємо роль користувача
+  const buttonStyle = {
+    width: '100%', padding: '10px', fontSize: '1rem',
+    backgroundColor: '#0070f3', color: '#fff',
+    border: 'none', borderRadius: '6px', cursor: 'pointer',
+  };
+
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -75,24 +66,28 @@ export default function CompleteProfile() {
     })();
   }, []);
 
-  // Обробник форми з валідацією
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId) return;
 
+    // Очищаємо попередні помилки
+    const newErrors: typeof errors = {};
+    if (!firstName) newErrors.firstName = 'Ім’я обов’язкове';
     if (role === 'patient') {
-      if (!country) {
-        alert('❗ Будь ласка, оберіть країну проживання.');
-        return;
-      }
-      if (allergies.length === 0) {
-        alert('❗ Будь ласка, оберіть хоча б один алерген.');
-        return;
-      }
+      if (!birthDate) newErrors.birthDate = 'Дата народження обов’язкова';
+      if (!weight) newErrors.weight = 'Вага обов’язкова';
+      if (!country) newErrors.country = 'Оберіть країну проживання';
+      if (allergies.length === 0) newErrors.allergies = 'Оберіть хоча б один алерген';
     }
+    if (role === 'doctor') {
+      if (!specialization) newErrors.specialization = 'Оберіть спеціалізацію';
+      if (!about) newErrors.about = 'Розкажіть про себе';
+    }
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
 
+    // Підготовка оновлень
     const updates: any = { first_name: firstName };
-
     if (role === 'patient') {
       updates.last_name = lastName;
       updates.middle_name = middleName;
@@ -102,7 +97,6 @@ export default function CompleteProfile() {
       updates.allergies = allergies.map((a) => a.value);
       updates.chronic_diseases = chronicDiseases;
     }
-
     if (role === 'doctor') {
       updates.specialization = specialization;
       updates.about = about;
@@ -121,63 +115,34 @@ export default function CompleteProfile() {
     router.push('/cabinet');
   };
 
-  // Логіка дизейблу кнопки
-  const isSaveDisabled = role === 'patient'
-    ? !firstName || !birthDate || !weight || !country || allergies.length === 0
-    : role === 'doctor'
-    ? !firstName || !specialization || !about
-    : true;
-
   return (
     <main style={{ maxWidth: '600px', margin: '2rem auto', fontFamily: 'Arial, sans-serif' }}>
       <h1 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>Заповнення профілю</h1>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         {/* Ім’я */}
         <label>Ім’я*:</label>
         <input
-          type="text"
-          value={firstName}
+          type="text" value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
-          required
           style={inputStyle}
         />
+        {errors.firstName && <p style={{ color: 'red', margin: '0 0 1rem' }}>{errors.firstName}</p>}
 
-        {/* Поля пацієнта */}
         {role === 'patient' && (
           <>
             <label>Прізвище:</label>
-            <input
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              style={inputStyle}
-            />
+            <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} style={inputStyle} />
 
             <label>По-батькові:</label>
-            <input
-              type="text"
-              value={middleName}
-              onChange={(e) => setMiddleName(e.target.value)}
-              style={inputStyle}
-            />
+            <input type="text" value={middleName} onChange={(e) => setMiddleName(e.target.value)} style={inputStyle} />
 
             <label>Дата народження*:</label>
-            <input
-              type="date"
-              value={birthDate}
-              onChange={(e) => setBirthDate(e.target.value)}
-              required
-              style={inputStyle}
-            />
+            <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} style={inputStyle} />
+            {errors.birthDate && <p style={{ color: 'red', margin: '0 0 1rem' }}>{errors.birthDate}</p>}
 
             <label>Вага (кг)*:</label>
-            <input
-              type="number"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              required
-              style={inputStyle}
-            />
+            <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} style={inputStyle} />
+            {errors.weight && <p style={{ color: 'red', margin: '0 0 1rem' }}>{errors.weight}</p>}
 
             <label>Країна проживання*:</label>
             <Select
@@ -186,17 +151,16 @@ export default function CompleteProfile() {
               onChange={(o) => setCountry(o?.value || '')}
               placeholder="Оберіть країну"
             />
-            <div style={{ height: '1rem' }} />
+            {errors.country && <p style={{ color: 'red', margin: '0 0 1rem' }}>{errors.country}</p>}
 
             <label>Алергени*:</label>
             <Select
-              isMulti
-              options={allergyOptions}
+              isMulti options={allergyOptions}
               value={allergies}
               onChange={(o) => setAllergies(o as any[])}
               placeholder="Оберіть алергени"
             />
-            <div style={{ height: '1rem' }} />
+            {errors.allergies && <p style={{ color: 'red', margin: '0 0 1rem' }}>{errors.allergies}</p>}
 
             <label>Хронічні хвороби:</label>
             <textarea
@@ -208,7 +172,6 @@ export default function CompleteProfile() {
           </>
         )}
 
-        {/* Поля лікаря */}
         {role === 'doctor' && (
           <>
             <label>Спеціалізація*:</label>
@@ -219,17 +182,16 @@ export default function CompleteProfile() {
               placeholder="Оберіть спеціалізацію"
               isSearchable
             />
-            <div style={{ height: '1rem' }} />
+            {errors.specialization && <p style={{ color: 'red', margin: '0 0 1rem' }}>{errors.specialization}</p>}
 
             <label>Про себе*:</label>
             <textarea
               value={about}
               onChange={(e) => setAbout(e.target.value)}
               rows={4}
-              required
               style={{ ...inputStyle, resize: 'vertical' }}
             />
-            <div style={{ height: '1rem' }} />
+            {errors.about && <p style={{ color: 'red', margin: '0 0 1rem' }}>{errors.about}</p>}
 
             <label>Фото:</label>
             <input
@@ -241,7 +203,7 @@ export default function CompleteProfile() {
           </>
         )}
 
-        <button type="submit" style={buttonStyle} disabled={isSaveDisabled}>
+        <button type="submit" style={buttonStyle}>
           Зберегти
         </button>
       </form>
