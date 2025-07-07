@@ -1,244 +1,197 @@
-import React, { useEffect, useState } from 'react';
-import { supabase }    from '../lib/supabase';
-import { useRouter }   from 'next/router';
-import Select          from 'react-select';
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
+import { useRouter } from 'next/router'
+import Select from 'react-select'
 
 export default function CompleteDoctor() {
-  const [userId, setUserId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null)
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [middleName, setMiddleName] = useState('')
+  const [birthDate, setBirthDate] = useState('')
+  const [specialization, setSpecialization] = useState('')
+  const [languagesSpoken, setLanguagesSpoken] = useState<any[]>([])
+  const [photo, setPhoto] = useState<File | null>(null)
+  const [education, setEducation] = useState('')
+  const [about, setAbout] = useState('')
+  const [diplomaFiles, setDiplomaFiles] = useState<File[]>([])
+  const [diplomaPreviews, setDiplomaPreviews] = useState<string[]>([])
+  const [errors, setErrors] = useState<{ [k: string]: string }>({})
+  const [loading, setLoading] = useState(false)
 
-  // Дані форми
-  const [firstName, setFirstName]             = useState('');
-  const [lastName, setLastName]               = useState('');
-  const [middleName, setMiddleName]           = useState('');
-  const [birthDate, setBirthDate]             = useState('');
-  const [specializations, setSpecializations] = useState<any[]>([]);
-  const [languagesSpoken, setLanguagesSpoken] = useState<any[]>([]);
-  const [photo, setPhoto]                     = useState<File | null>(null);
-  const [education, setEducation]             = useState('');
-  const [about, setAbout]                     = useState('');
-  const [diplomaFiles, setDiplomaFiles]       = useState<File[]>([]);
+  const router = useRouter()
 
-  // Публічні URL після upload
-  const [photoPreview, setPhotoPreview]       = useState<string>('');
-  const [diplomaUrls, setDiplomaUrls]         = useState<string[]>([]);
-
-  const [errors, setErrors]                   = useState<Record<string,string>>({});
-  const router = useRouter();
-
-  // Опції для селектів
   const specializationOptions = [
-    'Терапевт','Кардіолог','Педіатр','Дерматолог','Невролог',
-    'Офтальмолог','Хірург','Гінеколог','Стоматолог','Психотерапевт'
-  ].map(v => ({ value: v, label: v }));
+    'Терапевт', 'Кардіолог', 'Педіатр', 'Дерматолог', 'Невролог',
+    'Офтальмолог', 'Хірург', 'Гінеколог', 'Стоматолог', 'Психотерапевт'
+  ].map(v => ({ value: v, label: v }))
 
   const languageOptions = [
-    'Українська','English','Русский','Polski','Deutsch',
-    'Français','Español','Italiano','中文','العربية','Türkçe','Português','தமிழ்','हिन्दी'
-  ].map(v => ({ value: v, label: v }));
+    'Українська', 'English', 'Русский', 'Polski', 'Deutsch',
+    'Français', 'Español', 'Italiano', '中文', 'العربية', 'Türkçe', 'Português', 'தமிழ்', 'हिन्दी'
+  ].map(v => ({ value: v, label: v }))
 
   const inputStyle = {
     width: '100%', padding: 10, fontSize: '1rem',
-    border: '1px solid #ccc', borderRadius: 6, marginBottom: 8,
-  };
+    border: '1px solid #ccc', borderRadius: 6, marginBottom: 8, minHeight: 40
+  }
+  const selectStyles = {
+    control: (base: any) => ({
+      ...base, ...inputStyle, minHeight: 40, boxShadow: 'none'
+    }),
+    menu: (base: any) => ({ ...base, zIndex: 999 }),
+    valueContainer: (base: any) => ({
+      ...base, padding: '0 8px', minHeight: 40, height: 40, alignItems: 'center'
+    }),
+    input: (base: any) => ({
+      ...base, margin: 0, padding: 0, minHeight: 40, height: 40
+    })
+  }
   const buttonStyle = {
     width: '100%', padding: 12, fontSize: '1rem',
     backgroundColor: '#0070f3', color: '#fff',
-    border: 'none', borderRadius: 6, cursor: 'pointer', marginTop: 16,
-  };
+    border: 'none', borderRadius: 6, cursor: 'pointer', marginTop: 16
+  }
 
-  // Отримуємо поточного user
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.id) setUserId(user.id);
-    })();
-  }, []);
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user?.id) { router.push('/auth'); return }
+      setUserId(user.id)
+    })()
+  }, [router])
 
-  // Обробляємо вибір дипломів
+  // Прев’ю дипломів
   const handleDiplomas = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDiplomaFiles(Array.from(e.target.files || []));
-    setDiplomaUrls([]);  // очистимо попередні
-  };
+    const files = Array.from(e.target.files || [])
+    setDiplomaFiles(files)
+    setDiplomaPreviews(files.map(f => URL.createObjectURL(f)))
+  }
 
-  // Подача форми
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
+    const errs: { [k: string]: string } = {}
+    if (!firstName.trim()) errs.firstName = 'Ім’я обов’язкове'
+    if (!lastName.trim()) errs.lastName = 'Прізвище обов’язкове'
+    if (!middleName.trim()) errs.middleName = 'По-батькові обов’язкове'
+    if (!birthDate) errs.birthDate = 'Дата народження обов’язкова'
+    if (!specialization) errs.specialization = 'Спеціалізація обов’язкова'
+    if (!languagesSpoken.length) errs.languagesSpoken = 'Оберіть мови'
+    if (!photo) errs.photo = 'Додайте фото профілю'
+    if (!about.trim()) errs.about = 'Розкажіть про себе'
+    if (!diplomaFiles.length) errs.diplomaFiles = 'Завантажте дипломи'
+    setErrors(errs)
+    if (Object.keys(errs).length) return
 
-    // 1) Валідація
-    const errs: Record<string,string> = {};
-    if (!lastName)     errs.lastName     = 'Прізвище обов’язкове';
-    if (!firstName)    errs.firstName    = 'Ім’я обов’язкове';
-    if (!middleName)   errs.middleName   = 'По-батькові обов’язкове';
-    if (!birthDate)    errs.birthDate    = 'Дата народження обов’язкова';
-    if (!specializations.length)
-                       errs.specializations = 'Оберіть щонайменше одну спеціальність';
-    if (!languagesSpoken.length)
-                       errs.languagesSpoken = 'Оберіть щонайменше одну мову';
-    if (!photo)        errs.photo        = 'Додайте фото профілю';
-    if (!about)        errs.about        = 'Поле «Про себе» обов’язкове';
-    if (!diplomaFiles.length)
-                       errs.diplomaFiles = 'Завантажте хоча б один диплом';
-    setErrors(errs);
-    if (Object.keys(errs).length) return;
-
-    // 2) Готуємо payload
+    setLoading(true)
     const updates: any = {
-      last_name: lastName,
-      first_name: firstName,
-      middle_name: middleName,
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      middle_name: middleName.trim(),
       birth_date: birthDate,
-      specialization: specializations.map(s => s.value),
+      specialization,
       languages_spoken: languagesSpoken.map(l => l.value),
       education,
-      about,
-    };
+      about
+    }
 
-    // 3) Upload аватарки
+    // Фото профілю
     if (photo && userId) {
-      const ext = photo.name.split('.').pop();
-      const key = `avatars/${userId}.${ext}`;
-      const { data: aData, error: aErr } = await supabase
-        .storage
-        .from('avatars')
-        .upload(key, photo, { upsert: true });
-      if (aErr) {
-        setErrors(prev => ({ ...prev, photo: aErr.message }));
-        return;
-      }
-      updates.photo = aData.path;
-      const { data: { publicUrl } } = supabase
-        .storage.from('avatars')
-        .getPublicUrl(aData.path);
-      setPhotoPreview(publicUrl);
+      const ext = photo.name.split('.').pop()
+      const key = `avatars/${userId}.${ext}`
+      const { data: photoData, error: photoError } = await supabase.storage.from('avatars').upload(key, photo, { upsert: true })
+      if (!photoError) updates.photo = photoData?.path
     }
 
-    // 4) Upload дипломів (з санітизацією імен)
-    if (diplomaFiles.length && userId) {
-      const paths: string[] = [];
-      for (const file of diplomaFiles) {
-        const ext = file.name.split('.').pop();
-        // Санітизуємо baseName
-        const base = file.name
-          .toLowerCase()
-          .replace(/[^a-z0-9\-_.]/g, '-')  // латиниця, цифри, '-', '_', '.'
-          .replace(/-+/g, '-')             // дублікати '-'
-          .replace(/^\-|\-$/g, '');        // обрізаємо крайні '-'
-        const key = `diplomas/${userId}-${base}.${ext}`;
-        const { data: dData, error: dErr } = await supabase
-          .storage.from('diplomas')
-          .upload(key, file, { upsert: true });
-        if (dErr) {
-          setErrors(prev => ({ ...prev, diplomaFiles: dErr.message }));
-          return;
-        }
-        paths.push(dData.path);
-      }
-      updates.diploma_photos = paths;
-      // Отримуємо publicUrl для кожного
-      const urls = paths.map(p =>
-        supabase.storage.from('diplomas').getPublicUrl(p).data.publicUrl
-      );
-      setDiplomaUrls(urls);
+    // Дипломи
+    const paths: string[] = []
+    for (const file of diplomaFiles) {
+      const ext = file.name.split('.').pop()
+      const key = `diplomas/${userId}-${file.name}`
+      const { data: diplData } = await supabase.storage.from('diplomas').upload(key, file, { upsert: true })
+      if (diplData?.path) paths.push(diplData.path)
     }
+    updates.diploma_photos = paths
 
-    // 5) Оновлюємо запис у users
-    const { error: uErr } = await supabase
-      .from('users')
-      .update(updates)
-      .eq('id', userId);
-    if (uErr) {
-      alert('Не вдалося оновити профіль: ' + uErr.message);
-      return;
-    }
+await supabase.from('users').update(updates).eq('id', userId)
+setLoading(false)
+router.push('/cabinet-doctor')
 
-    // 6) Переходимо в кабінет
-    router.push('/cabinet');
-  };
+  }
 
   return (
-    <main style={{ maxWidth: 600, margin: '2rem auto', fontFamily: 'Arial, sans-serif' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '1rem' }}>Профіль лікаря</h1>
+    <main style={{ maxWidth: 700, margin: '2rem auto', fontFamily: 'Arial, sans-serif' }}>
+      <h1 style={{ textAlign: 'center', marginBottom: 16 }}>Профіль лікаря</h1>
       <form onSubmit={handleSubmit} noValidate>
         <label>Прізвище*:</label>
-        <input value={lastName}
-               onChange={e => setLastName(e.target.value)}
-               style={inputStyle}/>
-        {errors.lastName && <p style={{ color: 'red' }}>{errors.lastName}</p>}
+        <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} style={inputStyle} />
+        {errors.lastName && <div style={{ color: 'red', marginTop: -6 }}>{errors.lastName}</div>}
 
         <label>Ім’я*:</label>
-        <input value={firstName}
-               onChange={e => setFirstName(e.target.value)}
-               style={inputStyle}/>
-        {errors.firstName && <p style={{ color: 'red' }}>{errors.firstName}</p>}
+        <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} style={inputStyle} />
+        {errors.firstName && <div style={{ color: 'red', marginTop: -6 }}>{errors.firstName}</div>}
 
         <label>По-батькові*:</label>
-        <input value={middleName}
-               onChange={e => setMiddleName(e.target.value)}
-               style={inputStyle}/>
-        {errors.middleName && <p style={{ color: 'red' }}>{errors.middleName}</p>}
+        <input type="text" value={middleName} onChange={e => setMiddleName(e.target.value)} style={inputStyle} />
+        {errors.middleName && <div style={{ color: 'red', marginTop: -6 }}>{errors.middleName}</div>}
 
         <label>Дата народження*:</label>
-        <input type="date" value={birthDate}
-               onChange={e => setBirthDate(e.target.value)}
-               style={inputStyle}/>
-        {errors.birthDate && <p style={{ color: 'red' }}>{errors.birthDate}</p>}
+        <input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} style={inputStyle} />
+        {errors.birthDate && <div style={{ color: 'red', marginTop: -6 }}>{errors.birthDate}</div>}
 
-        <label>Спеціальності*:</label>
-        <Select isMulti options={specializationOptions}
-                value={specializations}
-                onChange={o => setSpecializations(o as any[])}
-                placeholder="Оберіть спеціальності"/>
-        {errors.specializations && <p style={{ color: 'red' }}>{errors.specializations}</p>}
+        <label>Спеціалізація*:</label>
+        <Select
+          options={specializationOptions}
+          styles={selectStyles}
+          value={specializationOptions.find(o => o.value === specialization) || null}
+          onChange={o => setSpecialization(o?.value || '')}
+          placeholder="Оберіть"
+        />
+        {errors.specialization && <div style={{ color: 'red', marginTop: -6 }}>{errors.specialization}</div>}
 
         <label>Мови спілкування*:</label>
-        <Select isMulti options={languageOptions}
-                value={languagesSpoken}
-                onChange={o => setLanguagesSpoken(o as any[])}
-                placeholder="Оберіть мови"/>
-        {errors.languagesSpoken && <p style={{ color: 'red' }}>{errors.languagesSpoken}</p>}
+        <Select
+          isMulti
+          options={languageOptions}
+          styles={selectStyles}
+          value={languagesSpoken}
+          onChange={o => setLanguagesSpoken(o as any[])}
+          placeholder="Оберіть"
+        />
+        {errors.languagesSpoken && <div style={{ color: 'red', marginTop: -6 }}>{errors.languagesSpoken}</div>}
 
         <label>Фото профілю*:</label>
-        <input type="file"
-               accept="image/*"
-               onChange={e => setPhoto(e.target.files?.[0] || null)}
-               style={inputStyle}/>
-        {errors.photo && <p style={{ color: 'red' }}>{errors.photo}</p>}
-
-        {photoPreview && (
-          <div style={{ margin: '1rem 0' }}>
-            <img src={photoPreview} style={{ width: 150, borderRadius: 4 }}/>
-          </div>
-        )}
+        <input type="file" accept="image/*" onChange={e => setPhoto(e.target.files?.[0] || null)} style={inputStyle} />
+        {errors.photo && <div style={{ color: 'red', marginTop: -6 }}>{errors.photo}</div>}
 
         <label>Освіта:</label>
-        <input value={education}
-               onChange={e => setEducation(e.target.value)}
-               placeholder="Університет, рік"
-               style={inputStyle}/>
+        <input type="text" value={education} onChange={e => setEducation(e.target.value)} placeholder="Університет, рік" style={inputStyle} />
 
         <label>Про себе*:</label>
-        <textarea value={about}
-                  onChange={e => setAbout(e.target.value)}
-                  rows={4}
-                  style={{ ...inputStyle, resize: 'vertical' }}/>
-        {errors.about && <p style={{ color: 'red' }}>{errors.about}</p>}
+        <textarea value={about} onChange={e => setAbout(e.target.value)} rows={4} style={{ ...inputStyle, resize: 'vertical' }} />
+        {errors.about && <div style={{ color: 'red', marginTop: -6 }}>{errors.about}</div>}
 
         <label>Фото дипломів*:</label>
-        <input type="file"
-               multiple
-               accept="image/*"
-               onChange={handleDiplomas}
-               style={inputStyle}/>
-        {errors.diplomaFiles && <p style={{ color: 'red' }}>{errors.diplomaFiles}</p>}
+        <input type="file" multiple accept="image/*" onChange={handleDiplomas} style={inputStyle} />
+        {errors.diplomaFiles && <div style={{ color: 'red', marginTop: -6 }}>{errors.diplomaFiles}</div>}
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '1rem 0' }}>
-          {diplomaUrls.map((u, i) => (
-            <img key={i} src={u} style={{ width: 150, borderRadius: 4 }}/>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+          {diplomaPreviews.map((src, i) => (
+            <div key={i} style={{ position: 'relative' }}>
+              <img src={src} style={{ width: 150, borderRadius: 4 }} alt={`Диплом ${i + 1}`} />
+              <div style={{
+                position: 'absolute', top: '50%', left: '50%',
+                transform: 'translate(-50%,-50%) rotate(-30deg)',
+                color: 'rgba(255,255,255,0.5)', fontSize: 24, fontWeight: 'bold', pointerEvents: 'none'
+              }}>Likar24</div>
+            </div>
           ))}
         </div>
 
-        <button type="submit" style={buttonStyle}>Зберегти</button>
+        <button type="submit" style={buttonStyle} disabled={loading}>
+          {loading ? 'Збереження…' : 'Зберегти'}
+        </button>
       </form>
     </main>
-  );
+  )
 }

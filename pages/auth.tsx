@@ -63,7 +63,7 @@ function LoginForm() {
   const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     setError(null)
 
     if (!EMAIL_REGEX.test(email)) {
@@ -72,14 +72,17 @@ function LoginForm() {
     }
 
     setLoading(true)
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
 
-    if (authError) {
-      setError(authError.message)
-    } else {
-      router.push('/cabinet')
+    if (authError || !data.user) {
+      setError(authError?.message ?? 'Не вдалося увійти')
+      return
     }
+
+    const role = (data.user.user_metadata as any)?.role as 'patient' | 'doctor'
+    if (role === 'doctor') router.push('/doctor-cabinet')
+    else                  router.push('/cabinet')
   }
 
   return (
@@ -118,13 +121,13 @@ function LoginForm() {
 function RegisterForm() {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole]         = useState('')
+  const [role, setRole]         = useState<'patient'|'doctor'>('patient')
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState<string|null>(null)
   const router = useRouter()
 
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     setError(null)
 
     if (!EMAIL_REGEX.test(email)) {
@@ -135,16 +138,17 @@ function RegisterForm() {
       setError('Пароль має бути щонайменше 6 символів')
       return
     }
-    if (!role) {
-      setError('Оберіть, будь ласка, роль')
-      return
-    }
 
     setLoading(true)
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+    // реєстрація з записом ролі в metadata
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { role } }
+    })
     if (signUpError || !data.user) {
-      setLoading(false)
       setError(signUpError?.message ?? 'Невідома помилка реєстрації')
+      setLoading(false)
       return
     }
 
@@ -159,11 +163,9 @@ function RegisterForm() {
       return
     }
 
-    if (role === 'patient') {
-      router.push('/complete-patient')
-    } else {
-      router.push('/complete-doctor')
-    }
+    // ведемо на завершення профілю
+    if (role === 'patient') router.push('/complete-patient')
+    else                  router.push('/complete-doctor')
   }
 
   return (
@@ -190,11 +192,10 @@ function RegisterForm() {
       <label>Роль</label>
       <select
         value={role}
-        onChange={e => setRole(e.target.value)}
+        onChange={e => setRole(e.target.value as any)}
         required
         style={inputStyle}
       >
-        <option value="">Оберіть роль</option>
         <option value="patient">Пацієнт</option>
         <option value="doctor">Лікар</option>
       </select>
