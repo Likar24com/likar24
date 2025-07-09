@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useRouter } from 'next/router'
 import Select from 'react-select'
+import { FiTrash2 } from 'react-icons/fi'
+import { specializationOptions, languageOptions, timezoneOptions } from '../lib/constants'
 
 export default function CompleteDoctor() {
   const [userId, setUserId] = useState<string | null>(null)
@@ -9,27 +11,18 @@ export default function CompleteDoctor() {
   const [lastName, setLastName] = useState('')
   const [middleName, setMiddleName] = useState('')
   const [birthDate, setBirthDate] = useState('')
-  const [specialization, setSpecialization] = useState('')
+  const [specializations, setSpecializations] = useState<any[]>([])
   const [languagesSpoken, setLanguagesSpoken] = useState<any[]>([])
+  const [timezone, setTimezone] = useState<any>(null)
   const [photo, setPhoto] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [education, setEducation] = useState('')
   const [about, setAbout] = useState('')
   const [diplomaFiles, setDiplomaFiles] = useState<File[]>([])
   const [diplomaPreviews, setDiplomaPreviews] = useState<string[]>([])
   const [errors, setErrors] = useState<{ [k: string]: string }>({})
   const [loading, setLoading] = useState(false)
-
   const router = useRouter()
-
-  const specializationOptions = [
-    'Терапевт', 'Кардіолог', 'Педіатр', 'Дерматолог', 'Невролог',
-    'Офтальмолог', 'Хірург', 'Гінеколог', 'Стоматолог', 'Психотерапевт'
-  ].map(v => ({ value: v, label: v }))
-
-  const languageOptions = [
-    'Українська', 'English', 'Русский', 'Polski', 'Deutsch',
-    'Français', 'Español', 'Italiano', '中文', 'العربية', 'Türkçe', 'Português', 'தமிழ்', 'हिन्दी'
-  ].map(v => ({ value: v, label: v }))
 
   const inputStyle = {
     width: '100%', padding: 10, fontSize: '1rem',
@@ -39,13 +32,7 @@ export default function CompleteDoctor() {
     control: (base: any) => ({
       ...base, ...inputStyle, minHeight: 40, boxShadow: 'none'
     }),
-    menu: (base: any) => ({ ...base, zIndex: 999 }),
-    valueContainer: (base: any) => ({
-      ...base, padding: '0 8px', minHeight: 40, height: 40, alignItems: 'center'
-    }),
-    input: (base: any) => ({
-      ...base, margin: 0, padding: 0, minHeight: 40, height: 40
-    })
+    menu: (base: any) => ({ ...base, zIndex: 999 })
   }
   const buttonStyle = {
     width: '100%', padding: 12, fontSize: '1rem',
@@ -61,13 +48,37 @@ export default function CompleteDoctor() {
     })()
   }, [router])
 
-  // Прев’ю дипломів
+  // Аватар прев'ю
+  useEffect(() => {
+    if (photo) setPhotoPreview(URL.createObjectURL(photo))
+    else setPhotoPreview(null)
+    return () => { if (photoPreview) URL.revokeObjectURL(photoPreview) }
+  }, [photo])
+
+  // Дипломи прев'ю
+  useEffect(() => {
+    setDiplomaPreviews(diplomaFiles.map(f => URL.createObjectURL(f)))
+    return () => { diplomaFiles.forEach(f => URL.revokeObjectURL(f as any)) }
+  }, [diplomaFiles])
+
+  // Додати дипломи
   const handleDiplomas = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    setDiplomaFiles(files)
-    setDiplomaPreviews(files.map(f => URL.createObjectURL(f)))
+    setDiplomaFiles(prev => [...prev, ...files])
   }
 
+  // Видалити диплом до сабміту
+  const handleDiplomaRemove = (idx: number) => {
+    setDiplomaFiles(files => files.filter((_, i) => i !== idx))
+  }
+
+  // Видалити аватар до сабміту
+  const handlePhotoRemove = () => {
+    setPhoto(null)
+    setPhotoPreview(null)
+  }
+
+  // Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const errs: { [k: string]: string } = {}
@@ -75,8 +86,9 @@ export default function CompleteDoctor() {
     if (!lastName.trim()) errs.lastName = 'Прізвище обов’язкове'
     if (!middleName.trim()) errs.middleName = 'По-батькові обов’язкове'
     if (!birthDate) errs.birthDate = 'Дата народження обов’язкова'
-    if (!specialization) errs.specialization = 'Спеціалізація обов’язкова'
+    if (!specializations.length) errs.specializations = 'Оберіть спеціалізацію'
     if (!languagesSpoken.length) errs.languagesSpoken = 'Оберіть мови'
+    if (!timezone) errs.timezone = 'Оберіть часовий пояс'
     if (!photo) errs.photo = 'Додайте фото профілю'
     if (!about.trim()) errs.about = 'Розкажіть про себе'
     if (!diplomaFiles.length) errs.diplomaFiles = 'Завантажте дипломи'
@@ -89,10 +101,11 @@ export default function CompleteDoctor() {
       last_name: lastName.trim(),
       middle_name: middleName.trim(),
       birth_date: birthDate,
-      specialization,
+      specialization: specializations.map(s => s.value),
       languages_spoken: languagesSpoken.map(l => l.value),
+      timezone: timezone.value,
       education,
-      about
+      about,
     }
 
     // Фото профілю
@@ -107,16 +120,15 @@ export default function CompleteDoctor() {
     const paths: string[] = []
     for (const file of diplomaFiles) {
       const ext = file.name.split('.').pop()
-      const key = `diplomas/${userId}-${file.name}`
-      const { data: diplData } = await supabase.storage.from('diplomas').upload(key, file, { upsert: true })
-      if (diplData?.path) paths.push(diplData.path)
+      const key = `diplomas/${userId}-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { data: diplData, error: diplError } = await supabase.storage.from('diplomas').upload(key, file, { upsert: true })
+      if (!diplError && diplData?.path) paths.push(diplData.path)
     }
     updates.diploma_photos = paths
 
-await supabase.from('users').update(updates).eq('id', userId)
-setLoading(false)
-router.push('/cabinet-doctor')
-
+    await supabase.from('users').update(updates).eq('id', userId)
+    setLoading(false)
+    router.push('/cabinet-doctor')
   }
 
   return (
@@ -139,15 +151,26 @@ router.push('/cabinet-doctor')
         <input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} style={inputStyle} />
         {errors.birthDate && <div style={{ color: 'red', marginTop: -6 }}>{errors.birthDate}</div>}
 
+        <label>Часовий пояс*:</label>
+        <Select
+          options={timezoneOptions}
+          styles={selectStyles}
+          value={timezone}
+          onChange={setTimezone}
+          placeholder="Оберіть часовий пояс"
+        />
+        {errors.timezone && <div style={{ color: 'red', marginTop: -6 }}>{errors.timezone}</div>}
+
         <label>Спеціалізація*:</label>
         <Select
+          isMulti
           options={specializationOptions}
           styles={selectStyles}
-          value={specializationOptions.find(o => o.value === specialization) || null}
-          onChange={o => setSpecialization(o?.value || '')}
+          value={specializations}
+          onChange={o => setSpecializations(o as any[])}
           placeholder="Оберіть"
         />
-        {errors.specialization && <div style={{ color: 'red', marginTop: -6 }}>{errors.specialization}</div>}
+        {errors.specializations && <div style={{ color: 'red', marginTop: -6 }}>{errors.specializations}</div>}
 
         <label>Мови спілкування*:</label>
         <Select
@@ -161,7 +184,18 @@ router.push('/cabinet-doctor')
         {errors.languagesSpoken && <div style={{ color: 'red', marginTop: -6 }}>{errors.languagesSpoken}</div>}
 
         <label>Фото профілю*:</label>
-        <input type="file" accept="image/*" onChange={e => setPhoto(e.target.files?.[0] || null)} style={inputStyle} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
+          {photoPreview ? (
+            <>
+              <img src={photoPreview} style={{ width: 90, height: 110, borderRadius: 8, objectFit: 'cover', border: '1px solid #ccc' }} alt="avatar" />
+              <button type="button" onClick={handlePhotoRemove} style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
+                <FiTrash2 size={22} color="#d00" />
+              </button>
+            </>
+          ) : (
+            <input type="file" accept="image/*" onChange={e => setPhoto(e.target.files?.[0] || null)} style={inputStyle} />
+          )}
+        </div>
         {errors.photo && <div style={{ color: 'red', marginTop: -6 }}>{errors.photo}</div>}
 
         <label>Освіта:</label>
@@ -178,12 +212,18 @@ router.push('/cabinet-doctor')
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
           {diplomaPreviews.map((src, i) => (
             <div key={i} style={{ position: 'relative' }}>
-              <img src={src} style={{ width: 150, borderRadius: 4 }} alt={`Диплом ${i + 1}`} />
-              <div style={{
-                position: 'absolute', top: '50%', left: '50%',
-                transform: 'translate(-50%,-50%) rotate(-30deg)',
-                color: 'rgba(255,255,255,0.5)', fontSize: 24, fontWeight: 'bold', pointerEvents: 'none'
-              }}>Likar24</div>
+              <img src={src} style={{ width: 150, borderRadius: 4, border: '1px solid #ccc' }} alt={`Диплом ${i + 1}`} />
+              <button
+                type="button"
+                onClick={() => handleDiplomaRemove(i)}
+                style={{
+                  position: 'absolute', top: 2, right: 2, background: '#fff', border: 'none', borderRadius: '50%',
+                  boxShadow: '0 1px 3px #999', cursor: 'pointer', padding: 3
+                }}
+                aria-label="Видалити диплом"
+              >
+                <FiTrash2 color="#d00" size={18} />
+              </button>
             </div>
           ))}
         </div>
