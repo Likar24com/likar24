@@ -46,19 +46,115 @@ type Appointment = {
 enum Tab { MyData = 'Мої дані', Consults = 'Мої консультації', Finance = 'Мої фінанси', Schedule = 'Мій робочий графік' }
 enum ConsultsTab { Today = 'Сьогодні', Upcoming = 'Заплановані', Past = 'Минули' }
 
+// Dropzone для аватара
+function AvatarDropzone({
+  avatarPreview,
+  onFile,
+  onRemove
+}: { avatarPreview: string, onFile: (file: File) => void, onRemove: () => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      onFile(e.target.files[0])
+      e.target.value = ''
+    }
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 8 }}>
+      <div
+        onClick={() => inputRef.current?.click()}
+        style={{
+          width: 94, height: 112, border: '2px dashed #0070f3', borderRadius: 10, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: '#f6fbff', position: 'relative'
+        }}>
+        {!avatarPreview ? (
+          <span style={{ color: '#0070f3', fontWeight: 600, fontSize: 36, userSelect: 'none' }}>+</span>
+        ) : (
+          <img src={avatarPreview} alt="avatar" style={{ width: 90, height: 110, borderRadius: 8, objectFit: 'cover' }} />
+        )}
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleInputChange}
+        />
+        {avatarPreview && (
+          <button type="button" onClick={e => { e.stopPropagation(); onRemove(); }}
+            style={{
+              position: 'absolute', top: 0, right: 0, background: '#fff',
+              border: 'none', borderRadius: '50%', boxShadow: '0 1px 3px #999',
+              cursor: 'pointer', padding: 4, zIndex: 3
+            }}>
+            <FiTrash2 color="#d00" size={18} />
+          </button>
+        )}
+      </div>
+      <span style={{ color: '#888', fontSize: 13, marginTop: 4 }}>Завантажте фото (4:5)</span>
+    </div>
+  )
+}
+
+// Dropzone для дипломів
+function DiplomasDropzone({
+  previews,
+  onFiles,
+  onRemoveByIdx
+}: { previews: string[], onFiles: (files: File[]) => void, onRemoveByIdx: (idx: number) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      onFiles(Array.from(e.target.files))
+      e.target.value = ''
+    }
+  }
+  return (
+    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+      <div
+        onClick={() => inputRef.current?.click()}
+        style={{
+          width: 110, height: 78, border: '2px dashed #0070f3', borderRadius: 10, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: '#eef6fc', fontSize: 28, fontWeight: 700, userSelect: 'none'
+        }}>
+        +
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleInputChange}
+        />
+      </div>
+      {previews.map((src, i) => (
+        <div key={i} style={{ position: 'relative' }}>
+          <img src={src} alt={`Диплом ${i + 1}`} style={{ width: 110, height: 78, objectFit: 'cover', borderRadius: 10, border: '1px solid #ddd' }} />
+          <button type="button"
+            onClick={() => onRemoveByIdx(i)}
+            style={{
+              position: 'absolute', top: -8, right: -8, background: '#fff', border: 'none', borderRadius: '50%',
+              boxShadow: '0 1px 3px #999', cursor: 'pointer', padding: 3
+            }}>
+            <FiTrash2 color="#d00" size={18} />
+          </button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function CabinetDoctor() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [fields, setFields] = useState<Partial<UserProfile>>({})
-  const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string>('')
   const [avatarKey, setAvatarKey] = useState<string>('')
   const [diplomas, setDiplomas] = useState<string[]>([])
+  const [diplomaPreviews, setDiplomaPreviews] = useState<string[]>([])
   const [consults, setConsults] = useState<Appointment[]>([])
   const [tab, setTab] = useState<Tab>(Tab.MyData)
   const [consultTab, setConsultTab] = useState<ConsultsTab>(ConsultsTab.Today)
-  const [nextConsult, setNextConsult] = useState<Appointment | null>(null)
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState('')
   const [emailSuccess, setEmailSuccess] = useState('')
@@ -66,9 +162,8 @@ export default function CabinetDoctor() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [passwordSuccess, setPasswordSuccess] = useState('')
-  const avatarInputRef = useRef<HTMLInputElement | null>(null)
-  const diplomaInputRef = useRef<HTMLInputElement | null>(null)
 
+  // === Fetch profile & preview logic ===
   useEffect(() => {
     async function load() {
       const { data: { user }, error } = await supabase.auth.getUser()
@@ -94,6 +189,9 @@ export default function CabinetDoctor() {
           setAvatarKey(pr.photo)
           const { data } = supabase.storage.from('avatars').getPublicUrl(pr.photo)
           setAvatarPreview(data.publicUrl)
+        } else {
+          setAvatarPreview('')
+          setAvatarKey('')
         }
         // Дипломи: підтримка і масиву і рядка
         if (pr.diploma_photos) {
@@ -103,7 +201,7 @@ export default function CabinetDoctor() {
               ? [pr.diploma_photos]
               : [];
           setDiplomas(diplomasArr)
-        }
+        } else setDiplomas([])
       }
       // Консультації
       const { data: cons } = await supabase
@@ -116,14 +214,25 @@ export default function CabinetDoctor() {
         patient: Array.isArray(c.patient) ? c.patient[0] : c.patient
       }))
       setConsults(normalized)
-      const now = new Date()
-      const sorted = normalized.filter((c: any) => new Date(c.date) >= now)
-      setNextConsult(sorted.length ? sorted[0] : null)
     }
     load()
   }, [router])
 
-  // --- Поля ---
+  // --- Дипломи: previews (publicUrls)
+  useEffect(() => {
+    async function generatePreviews() {
+      const arr: string[] = []
+      for (const key of diplomas) {
+        const { data } = supabase.storage.from('diplomas').getPublicUrl(key)
+        arr.push(data.publicUrl)
+      }
+      setDiplomaPreviews(arr)
+    }
+    if (diplomas.length) generatePreviews()
+    else setDiplomaPreviews([])
+  }, [diplomas])
+
+  // --- Зберегти поле профілю
   const saveField = async (key: keyof UserProfile, value: any) => {
     setFields(prev => ({ ...prev, [key]: value }))
     if (!user) return
@@ -137,42 +246,40 @@ export default function CabinetDoctor() {
   const handleDate = (value: string) => saveField('birth_date', value)
 
   // --- Аватар ---
-  const handleAvatarChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0] && user) {
-      const file = e.target.files[0]
-      // Видаляємо старий аватар якщо є
-      if (avatarKey) {
-        await supabase.storage.from('avatars').remove([avatarKey])
-      }
-      // Завантажуємо новий
-      const ext = file.name.split('.').pop()
-      const key = `avatars/${user.id}.${ext}`
-      await supabase.storage.from('avatars').upload(key, file, { upsert: true })
-      await supabase.from('users').update({ photo: key }).eq('id', user.id)
-      setAvatarKey(key)
-      const { data } = supabase.storage.from('avatars').getPublicUrl(key)
-      setAvatarPreview(data.publicUrl)
-      if (avatarInputRef.current) avatarInputRef.current.value = ''
-    }
+  const handleAvatarFile = async (file: File) => {
+    if (!user) return
+    // Видаляємо старий аватар якщо є
+    if (avatarKey) await supabase.storage.from('avatars').remove([avatarKey])
+    // Завантажуємо новий
+    const ext = file.name.split('.').pop()
+    const key = `avatars/${user.id}.${ext}`
+    await supabase.storage.from('avatars').upload(key, file, { upsert: true })
+    await supabase.from('users').update({ photo: key }).eq('id', user.id)
+    setAvatarKey(key)
+    const { data } = supabase.storage.from('avatars').getPublicUrl(key)
+    setAvatarPreview(data.publicUrl)
+  }
+  const handleAvatarRemove = async () => {
+    if (!user || !avatarKey) return
+    await supabase.storage.from('avatars').remove([avatarKey])
+    await supabase.from('users').update({ photo: null }).eq('id', user.id)
+    setAvatarKey('')
+    setAvatarPreview('')
   }
 
   // --- Дипломи ---
-  const handleDiplomaAdd = async (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && user) {
-      const files = Array.from(e.target.files)
-      const uploadedKeys: string[] = []
-      for (const file of files) {
-        const ext = file.name.split('.').pop()
-        const key = `diplomas/${user.id}_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
-        await supabase.storage.from('diplomas').upload(key, file)
-        uploadedKeys.push(key)
-      }
-      // Додаємо до існуючих дипломів
-      const allDiplomas = [...diplomas, ...uploadedKeys]
-      await supabase.from('users').update({ diploma_photos: allDiplomas }).eq('id', user.id)
-      setDiplomas(allDiplomas)
-      if (diplomaInputRef.current) diplomaInputRef.current.value = ''
+  const handleDiplomaAdd = async (files: File[]) => {
+    if (!user || !files.length) return
+    const uploadedKeys: string[] = []
+    for (const file of files) {
+      const ext = file.name.split('.').pop()
+      const key = `diplomas/${user.id}_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+      await supabase.storage.from('diplomas').upload(key, file)
+      uploadedKeys.push(key)
     }
+    const allDiplomas = [...diplomas, ...uploadedKeys]
+    await supabase.from('users').update({ diploma_photos: allDiplomas }).eq('id', user.id)
+    setDiplomas(allDiplomas)
   }
   const handleDiplomaDelete = async (idx: number) => {
     if (!user) return
@@ -258,30 +365,11 @@ export default function CabinetDoctor() {
             }}>
               {/* Row: Avatar + ПІБ */}
               <div style={{ display: 'flex', gap: 24 }}>
-                <div>
-                  <img
-                    src={avatarPreview}
-                    alt="avatar"
-                    style={{ width: 128, height: 160, objectFit: 'cover', borderRadius: 24, border: '2px solid #eee', background: '#fff' }}
-                  />
-                  <div>
-                    <input
-                      id="avatar-upload"
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      ref={avatarInputRef}
-                      onChange={handleAvatarChange}
-                    />
-                    <button
-                      type="button"
-                      style={{ ...buttonStyle, background: '#0070f3', color: '#fff', marginTop: 12, minWidth: 'unset', padding: '8px 18px', fontSize: 16 }}
-                      onClick={() => avatarInputRef.current && avatarInputRef.current.click()}
-                    >
-                      Нове фото
-                    </button>
-                  </div>
-                </div>
+                <AvatarDropzone
+                  avatarPreview={avatarPreview}
+                  onFile={handleAvatarFile}
+                  onRemove={handleAvatarRemove}
+                />
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <label>Прізвище*</label>
                   <input
@@ -361,41 +449,11 @@ export default function CabinetDoctor() {
               {/* Дипломи */}
               <div>
                 <label>Дипломи</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                  {/* Старі дипломи */}
-                  {diplomas.map((dp, idx) => {
-                    const { data } = supabase.storage.from('diplomas').getPublicUrl(dp)
-                    return (
-                      <div key={idx} style={{ position: 'relative' }}>
-                        <img src={data.publicUrl} style={{ width: 110, height: 78, objectFit: 'cover', borderRadius: 10, border: '1px solid #ddd' }} />
-                        <button type="button"
-                          onClick={() => handleDiplomaDelete(idx)}
-                          style={{
-                            position: 'absolute', top: -8, right: -8, background: '#fff', border: 'none', borderRadius: '50%',
-                            boxShadow: '0 1px 3px #999', cursor: 'pointer', padding: 3
-                          }}>
-                          <FiTrash2 color="#d00" size={18} />
-                        </button>
-                      </div>
-                    )
-                  })}
-                  {/* Кнопка додати */}
-                  <label htmlFor="add-diploma" style={{
-                    width: 110, height: 78, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: '2px dashed #0070f3', borderRadius: 10, cursor: 'pointer', background: '#eef6fc'
-                  }}>
-                    <FiPlus size={30} color="#0070f3" />
-                  </label>
-                  <input
-                    id="add-diploma"
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    ref={diplomaInputRef}
-                    onChange={handleDiplomaAdd}
-                  />
-                </div>
+                <DiplomasDropzone
+                  previews={diplomaPreviews}
+                  onFiles={handleDiplomaAdd}
+                  onRemoveByIdx={handleDiplomaDelete}
+                />
               </div>
             </form>
           )}

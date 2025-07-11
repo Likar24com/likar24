@@ -80,9 +80,20 @@ function LoginForm() {
       return
     }
 
-    const role = (data.user.user_metadata as any)?.role as 'patient' | 'doctor'
-    if (role === 'doctor') router.push('/doctor-cabinet')
-    else                  router.push('/cabinet')
+    // ---- Визначаємо роль з таблиці users ----
+    const userId = data.user.id
+    const { data: userRow, error: userRowError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single()
+    if (userRowError || !userRow) {
+      setError('Не знайдено роль користувача')
+      return
+    }
+    if (userRow.role === 'doctor') router.push('/doctor-cabinet')
+    else                           router.push('/cabinet')
+    // ---- /кінець ----
   }
 
   return (
