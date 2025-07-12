@@ -16,11 +16,10 @@ type AvatarDropzoneProps = {
 }
 function AvatarDropzone({ onFile, preview, onRemove, onPreview }: AvatarDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-  // Примусове очищення інпуту для повторного вибору того ж файлу
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       onFile(e.target.files[0])
-      e.target.value = '' // очищаємо для можливості повторного вибору
+      e.target.value = ''
     }
   }
   return (
@@ -69,7 +68,6 @@ type DropzoneProps = {
 }
 function Dropzone({ onFiles, previews, onRemoveByIdx, onPreview }: DropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-  // Примусове очищення інпуту для повторного вибору тих же файлів
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       onFiles(Array.from(e.target.files))
@@ -218,6 +216,7 @@ export default function CompleteDoctor() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user?.id) { router.push('/auth'); return }
       setUserId(user.id)
+      // Якщо треба підгрузити існуючі дані при редагуванні — додати тут select doctor_profiles
     })()
   }, [router])
 
@@ -240,6 +239,7 @@ export default function CompleteDoctor() {
 
     setLoading(true)
     const updates: any = {
+      user_id: userId, // ВАЖЛИВО! Ключ вашої таблиці
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       middle_name: middleName.trim(),
@@ -271,7 +271,9 @@ export default function CompleteDoctor() {
     }
     updates.diploma_photos = paths
 
-    await supabase.from('doctor_profiles').update(updates).eq('id', userId)
+    // --- Основне: upsert по user_id ---
+    await supabase.from('doctor_profiles').upsert(updates, { onConflict: 'user_id' })
+
     setLoading(false)
     router.push('/cabinet-doctor')
   }

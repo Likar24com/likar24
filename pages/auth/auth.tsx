@@ -1,9 +1,9 @@
-// pages/auth.tsx
 import React, { useState } from 'react'
-import { supabase }       from '../lib/supabase'
-import { useRouter }      from 'next/router'
+import { useRouter } from 'next/router'
+import { supabase } from '../../lib/supabase'
 
-const EMAIL_REGEX = /^\S+@\S+\.\S+$/
+// Строгий regex для e-mail
+const EMAIL_REGEX = /^[^\s@]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 
 const inputStyle = {
   width: '100%',
@@ -44,7 +44,6 @@ export default function AuthPage() {
           <h2>Увійти</h2>
           <LoginForm />
         </div>
-
         {/* ----- Зареєструватися ----- */}
         <div style={{ flex: 1, paddingLeft: '1rem' }}>
           <h2>Зареєструватися</h2>
@@ -56,10 +55,10 @@ export default function AuthPage() {
 }
 
 function LoginForm() {
-  const [email, setEmail]       = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState<string|null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -67,7 +66,7 @@ function LoginForm() {
     setError(null)
 
     if (!EMAIL_REGEX.test(email)) {
-      setError('Будь ласка, введіть коректний e-mail')
+      setError(`Email address "${email}" is invalid`)
       return
     }
 
@@ -77,6 +76,16 @@ function LoginForm() {
 
     if (authError || !data.user) {
       setError(authError?.message ?? 'Не вдалося увійти')
+      return
+    }
+
+    // ---- Перевірка підтвердження e-mail ----
+    const userObj = data.user
+    const confirmed = userObj.email_confirmed_at || userObj.confirmed_at
+    if (!confirmed) {
+      sessionStorage.setItem('pending_email', email)
+      await supabase.auth.signOut()  // Важливо! Не залишати не підтверджених в сесії
+      router.push('/confirm-email')
       return
     }
 
@@ -91,9 +100,8 @@ function LoginForm() {
       setError('Не знайдено роль користувача')
       return
     }
-    if (userRow.role === 'doctor') router.push('/doctor-cabinet')
-    else                           router.push('/cabinet')
-    // ---- /кінець ----
+    if (userRow.role === 'doctor') router.push('/cabinet-doctor')
+    else router.push('/cabinet-patient')
   }
 
   return (
@@ -102,11 +110,14 @@ function LoginForm() {
       <input
         type="email"
         value={email}
-        onChange={e => setEmail(e.target.value)}
+        onChange={e => {
+          setEmail(e.target.value);
+          setError(null);
+        }}
         required
         style={inputStyle}
+        autoComplete="username"
       />
-
       <label>Пароль</label>
       <input
         type="password"
@@ -114,14 +125,17 @@ function LoginForm() {
         onChange={e => setPassword(e.target.value)}
         required
         style={inputStyle}
+        autoComplete="current-password"
       />
-
-      {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
-
+      {error && (
+        <div style={{ color: 'red', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 22, lineHeight: 1 }}>❌</span>
+          <span>{error}</span>
+        </div>
+      )}
       <button type="submit" disabled={loading} style={buttonStyle}>
         {loading ? 'Завантаження…' : 'Увійти'}
       </button>
-
       <p style={{ textAlign: 'center' }}>
         <a href="/reset-password">Забули пароль?</a>
       </p>
@@ -130,11 +144,11 @@ function LoginForm() {
 }
 
 function RegisterForm() {
-  const [email, setEmail]       = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole]         = useState<'patient'|'doctor'>('patient')
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState<string|null>(null)
+  const [role, setRole] = useState<'patient' | 'doctor'>('patient')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -142,7 +156,7 @@ function RegisterForm() {
     setError(null)
 
     if (!EMAIL_REGEX.test(email)) {
-      setError('Будь ласка, введіть коректний e-mail')
+      setError('Email address "' + email + '" is invalid')
       return
     }
     if (password.length < 6) {
@@ -151,32 +165,22 @@ function RegisterForm() {
     }
 
     setLoading(true)
-    // реєстрація з записом ролі в metadata
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { role } }
     })
-    if (signUpError || !data.user) {
-      setError(signUpError?.message ?? 'Невідома помилка реєстрації')
-      setLoading(false)
-      return
-    }
-
-    const userId = data.user.id
-    const { error: insertError } = await supabase
-      .from('users')
-      .insert({ id: userId, email, role, created_at: new Date().toISOString() })
     setLoading(false)
 
-    if (insertError) {
-      setError('Не вдалося зберегти роль: ' + insertError.message)
+    if (signUpError) {
+      setError(signUpError?.message ?? 'Невідома помилка реєстрації')
       return
     }
+    // --- одразу signOut для безпеки
+    await supabase.auth.signOut()
 
-    // ведемо на завершення профілю
-    if (role === 'patient') router.push('/complete-patient')
-    else                  router.push('/complete-doctor')
+    sessionStorage.setItem('pending_email', email)
+    router.push('/confirm-email')
   }
 
   return (
@@ -185,11 +189,17 @@ function RegisterForm() {
       <input
         type="email"
         value={email}
-        onChange={e => setEmail(e.target.value)}
+        onChange={e => {
+          setEmail(e.target.value);
+          setError(null);
+        }}
         required
         style={inputStyle}
+        autoComplete="username"
       />
-
+      <div style={{ fontSize: 13, color: '#888', margin: '4px 0 10px 0' }}>
+        Вводьте справжній e-mail (наприклад, @gmail.com, @ukr.net, @outlook.com)
+      </div>
       <label>Пароль</label>
       <input
         type="password"
@@ -198,8 +208,8 @@ function RegisterForm() {
         required
         minLength={6}
         style={inputStyle}
+        autoComplete="new-password"
       />
-
       <label>Роль</label>
       <select
         value={role}
@@ -210,9 +220,12 @@ function RegisterForm() {
         <option value="patient">Пацієнт</option>
         <option value="doctor">Лікар</option>
       </select>
-
-      {error && <p style={{ color: 'red', marginBottom: '1rem' }}>{error}</p>}
-
+      {error && (
+        <div style={{ color: 'red', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 22, lineHeight: 1 }}>❌</span>
+          <span>{error}</span>
+        </div>
+      )}
       <button type="submit" disabled={loading} style={buttonStyle}>
         {loading ? 'Реєстрація…' : 'Зареєструватися'}
       </button>
