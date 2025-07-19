@@ -38,7 +38,7 @@ export default function ConfirmedPage() {
       } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        setMessage("Не вдалося завантажити дані користувача.");
+        setMessage("Не вдалося завантfdfажити дані користувача.");
         return;
       }
 
