@@ -15,7 +15,7 @@ export default function ConfirmedPage() {
       const refreshToken = searchParams.get("refresh_token");
 
       if (!accessToken || !refreshToken) {
-        setMessage("Некоректне або відсутнє посилання для підтвердження.");
+        setMessage("Некоректне або вічччдсутнє посилання для підтвердження.");
         return;
       }
 
