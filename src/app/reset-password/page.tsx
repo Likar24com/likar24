@@ -1,97 +1,139 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  // Отримуємо токен з URL (query або hash)
   const [token, setToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
 
-  useEffect(() => {
-    let tokenFromUrl: string | null = null;
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      tokenFromUrl = urlParams.get("token");
-      if (!tokenFromUrl) {
-        const hash = window.location.hash;
-        if (hash) {
-          const hashParams = new URLSearchParams(hash.substring(1));
-          tokenFromUrl = hashParams.get("access_token") || hashParams.get("token");
-        }
+  // Отримання токенів з URL (query або hash)
+  function getTokensFromUrl() {
+    if (typeof window === "undefined") {
+      return { access_token: null, refresh_token: null };
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let access_token = urlParams.get("token");
+    let refresh_token = null;
+
+    if (!access_token) {
+      const hash = window.location.hash;
+      if (hash) {
+        const hashParams = new URLSearchParams(hash.substring(1));
+        access_token = hashParams.get("access_token");
+        refresh_token = hashParams.get("refresh_token");
       }
     }
-    setToken(tokenFromUrl);
+
+    return { access_token, refresh_token };
+  }
+
+  useEffect(() => {
+    const { access_token, refresh_token } = getTokensFromUrl();
+
+    if (!access_token) {
+      setError("Token не знайдено. Переконайтеся, що ви перейшли за правильним посиланням.");
+      return;
+    }
+
+    setToken(access_token);
+    setRefreshToken(refresh_token);
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
     setError(null);
     setMessage(null);
 
-    if (!password || !confirmPassword) {
-      setError("Заповніть всі поля");
+    if (password.length < 6) {
+      setError("Пароль має містити мінімум 6 символів.");
       return;
     }
+
     if (password !== confirmPassword) {
-      setError("Паролі не співпадають");
+      setError("Паролі не співпадають.");
       return;
     }
 
     if (!token) {
-      setError("Немає токена скидання пароля");
+      setError("Токен сесії відсутній. Спробуйте повторити скидання пароля.");
       return;
     }
 
     setLoading(true);
 
-    // Заміна пароля через supabase, без передачі accessToken (Supabase автоматично розпізнає сесію за токеном у URL)
-    const { error } = await supabase.auth.updateUser({ password });
+    // 1. Встановлюємо сесію із токеном (обов'язково refresh_token, якщо є)
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: token,
+      refresh_token: refreshToken ?? "",
+    });
 
-    if (error) {
-      setError("Помилка авторизації: " + error.message);
+    if (sessionError) {
+      setError("Помилка авторизації: " + sessionError.message);
       setLoading(false);
       return;
     }
 
-    setMessage("Пароль успішно змінено! Ви можете увійти з новим паролем.");
-    setLoading(false);
+    // 2. Оновлюємо пароль у контексті сесії
+    const { error } = await supabase.auth.updateUser({ password });
 
-    // Можна автоматично перекинути на логін через 3 секунди
+    if (error) {
+      setError("Помилка зміни пароля: " + error.message);
+      setLoading(false);
+      return;
+    }
+
+    setMessage("Пароль успішно змінено! Перенаправляємо...");
+
     setTimeout(() => {
       router.push("/login");
-    }, 3000);
+    }, 2500);
   }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 max-w-md mx-auto">
       <h1 className="text-2xl font-bold mb-6">Скидання пароля</h1>
+
       {error && <p className="text-red-600 mb-4">{error}</p>}
       {message && <p className="text-green-600 mb-4">{message}</p>}
+
       <form onSubmit={handleSubmit} className="w-full bg-white p-6 rounded-lg shadow space-y-4">
-        <label className="block font-medium mb-1">Новий пароль</label>
+        <label htmlFor="password" className="block font-medium mb-1">
+          Новий пароль
+        </label>
         <input
+          id="password"
           type="password"
+          placeholder="Введіть новий пароль"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="w-full p-2 border border-gray-300 rounded-lg"
           required
         />
-        <label className="block font-medium mb-1">Підтвердження пароля</label>
+
+        <label htmlFor="confirmPassword" className="block font-medium mb-1">
+          Підтвердження пароля
+        </label>
         <input
+          id="confirmPassword"
           type="password"
+          placeholder="Підтвердіть пароль"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           className="w-full p-2 border border-gray-300 rounded-lg"
           required
         />
+
         <button
           type="submit"
           disabled={loading}
