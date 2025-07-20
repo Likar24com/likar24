@@ -12,41 +12,32 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+
+  // Збережемо токени в стані
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
 
-  // Отримання токенів з URL (query або hash)
-  function getTokensFromUrl() {
-    if (typeof window === "undefined") {
-      return { access_token: null, refresh_token: null };
-    }
-
-    const urlParams = new URLSearchParams(window.location.search);
-    let access_token = urlParams.get("token");
-    let refresh_token = null;
-
-    if (!access_token) {
-      const hash = window.location.hash;
-      if (hash) {
-        const hashParams = new URLSearchParams(hash.substring(1));
-        access_token = hashParams.get("access_token");
-        refresh_token = hashParams.get("refresh_token");
-      }
-    }
-
-    return { access_token, refresh_token };
-  }
-
+  // Витягуємо токени з хеша URL
   useEffect(() => {
-    const { access_token, refresh_token } = getTokensFromUrl();
+    if (typeof window === "undefined") return;
 
-    if (!access_token) {
+    const hash = window.location.hash;
+    if (!hash) {
       setError("Token не знайдено. Переконайтеся, що ви перейшли за правильним посиланням.");
       return;
     }
 
-    setToken(access_token);
-    setRefreshToken(refresh_token);
+    const hashParams = new URLSearchParams(hash.substring(1));
+    const at = hashParams.get("access_token");
+    const rt = hashParams.get("refresh_token");
+
+    if (!at) {
+      setError("Token не знайдено в URL.");
+      return;
+    }
+
+    setAccessToken(at);
+    setRefreshToken(rt);
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -65,17 +56,17 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    if (!token) {
-      setError("Токен сесії відсутній. Спробуйте повторити скидання пароля.");
+    if (!accessToken || !refreshToken) {
+      setError("Токени відсутні або недійсні. Спробуйте повторити процес скидання пароля.");
       return;
     }
 
     setLoading(true);
 
-    // 1. Встановлюємо сесію із токеном (обов'язково refresh_token, якщо є)
+    // 1. Встановлюємо сесію з токенами
     const { error: sessionError } = await supabase.auth.setSession({
-      access_token: token,
-      refresh_token: refreshToken ?? "",
+      access_token: accessToken,
+      refresh_token: refreshToken,
     });
 
     if (sessionError) {
@@ -84,11 +75,11 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    // 2. Оновлюємо пароль у контексті сесії
-    const { error } = await supabase.auth.updateUser({ password });
+    // 2. Оновлюємо пароль вже в контексті сесії
+    const { error: updateError } = await supabase.auth.updateUser({ password });
 
-    if (error) {
-      setError("Помилка зміни пароля: " + error.message);
+    if (updateError) {
+      setError("Помилка зміни пароля: " + updateError.message);
       setLoading(false);
       return;
     }
