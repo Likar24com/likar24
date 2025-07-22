@@ -1,5 +1,6 @@
 import "./globals.css";
 import Header from "@/components/Header";
+import { Toaster } from "sonner";
 
 export const metadata = {
   title: "Likar24",
@@ -13,9 +14,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="uk">
-      <body>
+      <body className="bg-gray-50 text-gray-900">
         <Header />
-        <main>{children}</main>
+        <main className="min-h-screen">
+          {children}
+        </main>
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );
