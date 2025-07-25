@@ -67,6 +67,7 @@ export default function PatientProfileSetup() {
     }
 
     loadPatient();
+   
   }, []);
 
   function validate() {
@@ -143,7 +144,6 @@ export default function PatientProfileSetup() {
         }
       }
 
-      // Прибрано alert - одразу редірект
       router.push("/cabinet/patient");
     } catch (error) {
       alert("Несподівана помилка при збереженні.");
@@ -178,196 +178,198 @@ export default function PatientProfileSetup() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-4 sm:p-6 bg-white rounded-xl shadow-lg my-6 sm:my-12">
-      <h1 className="text-2xl font-semibold mb-6">Заповнення даних пацієнта</h1>
-      <form onSubmit={onSubmit} noValidate>
-        {/* Імʼя */}
-        <div className="mb-4">
-          <label className="block font-medium mb-1">
-            Імʼя <span className="text-red-600">*</span>
-          </label>
-          <input
-            type="text"
-            value={form.firstName}
-            onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-            className={`w-full border rounded p-2 ${
-              errors.firstName ? "border-red-600" : "border-gray-300"
-            }`}
-            required
-          />
-          {errors.firstName && <p className="text-red-600 text-sm">{errors.firstName}</p>}
+    <div className="max-w-2xl mx-auto w-full mt-6 sm:mt-12">
+      <div className="bg-white rounded-2xl shadow-lg overflow-hidden p-0 mb-8">
+        <div className="border-b px-4 sm:px-8 pt-6 pb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-0">Заповнення даних пацієнта</h1>
         </div>
+        <form onSubmit={onSubmit} noValidate className="p-4 sm:p-8 space-y-6">
+          {/* Імʼя */}
+          <div>
+            <label className="block font-medium mb-1">
+              Імʼя <span className="text-red-600">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.firstName}
+              onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+              className={`w-full border rounded-xl p-2 ${
+                errors.firstName ? "border-red-600" : "border-gray-300"
+              }`}
+              required
+            />
+            {errors.firstName && <p className="text-red-600 text-xs mt-1">{errors.firstName}</p>}
+          </div>
 
-        {/* Прізвище */}
-        <div className="mb-4">
-          <label className="block font-medium mb-1">Прізвище</label>
-          <input
-            type="text"
-            value={form.lastName}
-            onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-            className="w-full border rounded p-2 border-gray-300"
-          />
-        </div>
+          {/* Прізвище */}
+          <div>
+            <label className="block font-medium mb-1">Прізвище</label>
+            <input
+              type="text"
+              value={form.lastName}
+              onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+              className="w-full border rounded-xl p-2 border-gray-300"
+            />
+          </div>
 
-        {/* По-Батькові */}
-        <div className="mb-4">
-          <label className="block font-medium mb-1">По-Батькові</label>
-          <input
-            type="text"
-            value={form.middleName}
-            onChange={(e) => setForm({ ...form, middleName: e.target.value })}
-            className="w-full border rounded p-2 border-gray-300"
-          />
-        </div>
+          {/* По-Батькові */}
+          <div>
+            <label className="block font-medium mb-1">По-Батькові</label>
+            <input
+              type="text"
+              value={form.middleName}
+              onChange={(e) => setForm({ ...form, middleName: e.target.value })}
+              className="w-full border rounded-xl p-2 border-gray-300"
+            />
+          </div>
 
-        {/* Дата народження */}
-        <div className="mb-4">
-          <label className="block font-medium mb-1">
-            Дата народження <span className="text-red-600">*</span>
-          </label>
-          <input
-            type="date"
-            value={form.birthDate}
-            onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
-            className={`w-full border rounded p-2 ${
-              errors.birthDate ? "border-red-600" : "border-gray-300"
-            }`}
-            required
-          />
-          {errors.birthDate && <p className="text-red-600 text-sm">{errors.birthDate}</p>}
-        </div>
+          {/* Дата народження */}
+          <div>
+            <label className="block font-medium mb-1">
+              Дата народження <span className="text-red-600">*</span>
+            </label>
+            <input
+              type="date"
+              value={form.birthDate}
+              onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
+              className={`w-full border rounded-xl p-2 ${
+                errors.birthDate ? "border-red-600" : "border-gray-300"
+              }`}
+              required
+            />
+            {errors.birthDate && <p className="text-red-600 text-xs mt-1">{errors.birthDate}</p>}
+          </div>
 
-        {/* Стать */}
-        <div className="mb-4">
-          <label className="block font-medium mb-1">
-            Стать <span className="text-red-600">*</span>
-          </label>
-          <select
-            value={form.gender}
-            onChange={(e) => setForm({ ...form, gender: e.target.value })}
-            className={`w-full border rounded p-2 ${
-              errors.gender ? "border-red-600" : "border-gray-300"
-            }`}
-            required
-          >
-            <option value="">Оберіть стать</option>
-            {genders.map((g) => (
-              <option key={g.value} value={g.value}>
-                {g.label}
-              </option>
-            ))}
-          </select>
-          {errors.gender && <p className="text-red-600 text-sm">{errors.gender}</p>}
-        </div>
-
-        {/* Вага */}
-        <div className="mb-4">
-          <label className="block font-medium mb-1">
-            Вага (кг) <span className="text-red-600">*</span>
-          </label>
-          <input
-            type="number"
-            min="1"
-            value={form.weight}
-            onChange={(e) => setForm({ ...form, weight: e.target.value })}
-            className={`w-full border rounded p-2 ${
-              errors.weight ? "border-red-600" : "border-gray-300"
-            }`}
-            required
-          />
-          {errors.weight && <p className="text-red-600 text-sm">{errors.weight}</p>}
-        </div>
-
-        {/* Країна проживання */}
-        <div className="mb-4">
-          <label className="block font-medium mb-1">
-            Країна проживання <span className="text-red-600">*</span>
-          </label>
-          <select
-            value={form.country}
-            onChange={(e) => setForm({ ...form, country: e.target.value })}
-            className={`w-full border rounded p-2 ${
-              errors.country ? "border-red-600" : "border-gray-300"
-            }`}
-            required
-          >
-            <option value="">Оберіть країну</option>
-            {countries.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-          {errors.country && <p className="text-red-600 text-sm">{errors.country}</p>}
-        </div>
-
-        {/* Алергени */}
-        <div className="mb-2 font-medium">
-          Алергени <span className="text-red-600">*</span>
-        </div>
-
-        {/* Теги обраних алергенів */}
-        <div className="mb-2 flex flex-wrap gap-2">
-          {form.selectedAllergens.map((a) => (
-            <div
-              key={a}
-              className="flex items-center bg-blue-200 text-blue-800 rounded-full px-3 py-1 cursor-pointer select-none"
-              onClick={() => removeAllergen(a)}
-              title="Клікніть, щоб видалити"
+          {/* Стать */}
+          <div>
+            <label className="block font-medium mb-1">
+              Стать <span className="text-red-600">*</span>
+            </label>
+            <select
+              value={form.gender}
+              onChange={(e) => setForm({ ...form, gender: e.target.value })}
+              className={`w-full border rounded-xl p-2 ${
+                errors.gender ? "border-red-600" : "border-gray-300"
+              }`}
+              required
             >
-              {a}
-              <span className="ml-2 font-bold">&times;</span>
-            </div>
-          ))}
-        </div>
+              <option value="">Оберіть стать</option>
+              {genders.map((g) => (
+                <option key={g.value} value={g.value}>
+                  {g.label}
+                </option>
+              ))}
+            </select>
+            {errors.gender && <p className="text-red-600 text-xs mt-1">{errors.gender}</p>}
+          </div>
 
-        {/* Чекбокси алергенів */}
-        <div className="mb-6 flex flex-wrap gap-3">
-          {allergens.map((a) => {
-            const checked = form.selectedAllergens.includes(a);
-            return (
-              <label
+          {/* Вага */}
+          <div>
+            <label className="block font-medium mb-1">
+              Вага (кг) <span className="text-red-600">*</span>
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={form.weight}
+              onChange={(e) => setForm({ ...form, weight: e.target.value })}
+              className={`w-full border rounded-xl p-2 ${
+                errors.weight ? "border-red-600" : "border-gray-300"
+              }`}
+              required
+            />
+            {errors.weight && <p className="text-red-600 text-xs mt-1">{errors.weight}</p>}
+          </div>
+
+          {/* Країна проживання */}
+          <div>
+            <label className="block font-medium mb-1">
+              Країна проживання <span className="text-red-600">*</span>
+            </label>
+            <select
+              value={form.country}
+              onChange={(e) => setForm({ ...form, country: e.target.value })}
+              className={`w-full border rounded-xl p-2 ${
+                errors.country ? "border-red-600" : "border-gray-300"
+              }`}
+              required
+            >
+              <option value="">Оберіть країну</option>
+              {countries.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            {errors.country && <p className="text-red-600 text-xs mt-1">{errors.country}</p>}
+          </div>
+
+          {/* Алергени */}
+          <div className="font-medium mb-1">
+            Алергени <span className="text-red-600">*</span>
+          </div>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {form.selectedAllergens.map((a) => (
+              <div
                 key={a}
-                className={`cursor-pointer rounded-full px-4 py-1 border select-none ${
-                  checked ? "bg-blue-200 border-blue-500" : "border-gray-300"
-                }`}
+                className="flex items-center bg-blue-200 text-blue-800 rounded-full px-3 py-1 cursor-pointer select-none"
+                onClick={() => removeAllergen(a)}
+                title="Клікніть, щоб видалити"
               >
-                <input
-                  type="checkbox"
-                  className="hidden"
-                  checked={checked}
-                  onChange={() => toggleAllergen(a)}
-                />
                 {a}
-              </label>
-            );
-          })}
-        </div>
-        {errors.selectedAllergens && (
-          <p className="text-red-600 text-sm mb-4">{errors.selectedAllergens}</p>
-        )}
+                <span className="ml-2 font-bold">&times;</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {allergens.map((a) => {
+              const checked = form.selectedAllergens.includes(a);
+              return (
+                <label
+                  key={a}
+                  className={`cursor-pointer rounded-full px-4 py-1 border select-none text-base ${
+                    checked
+                      ? "bg-blue-100 border-blue-400 text-blue-900"
+                      : "border-gray-300 bg-white"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="hidden"
+                    checked={checked}
+                    onChange={() => toggleAllergen(a)}
+                  />
+                  {a}
+                </label>
+              );
+            })}
+          </div>
+          {errors.selectedAllergens && (
+            <p className="text-red-600 text-xs mb-2">{errors.selectedAllergens}</p>
+          )}
 
-        {/* Хронічні хвороби */}
-        <div className="mb-6">
-          <label className="block font-medium mb-1">Хронічні хвороби</label>
-          <textarea
-            rows={3}
-            value={form.chronicDiseases}
-            onChange={(e) => setForm({ ...form, chronicDiseases: e.target.value })}
-            className="w-full border rounded p-2 border-gray-300"
-            placeholder="Опишіть хронічні захворювання"
-          />
-        </div>
+          {/* Хронічні хвороби */}
+          <div>
+            <label className="block font-medium mb-1">Хронічні хвороби</label>
+            <textarea
+              rows={3}
+              value={form.chronicDiseases}
+              onChange={(e) => setForm({ ...form, chronicDiseases: e.target.value })}
+              className="w-full border rounded-xl p-2 border-gray-300 resize-y"
+              placeholder="Опишіть хронічні захворювання"
+            />
+          </div>
 
-        {/* Кнопка */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition"
-        >
-          {loading ? "Збереження..." : "Зберегти / Далі"}
-        </button>
-      </form>
+          {/* Кнопка */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition"
+          >
+            {loading ? "Збереження..." : "Зберегти / Далі"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

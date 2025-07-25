@@ -1,7 +1,12 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // ...інші налаштування
+  images: {
+    domains: [
+      "raeqdsmsxdemfyetvprv.supabase.co" // твій домен, може бути інший!
+      // якщо ти розгорнеш на проді — додай і продакшн-домен!
+    ],
+  },
 };
 
-export default nextConfig;
+module.exports = nextConfig;

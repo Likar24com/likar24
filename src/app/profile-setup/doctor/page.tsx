@@ -223,8 +223,8 @@ export default function DoctorProfilePage() {
 
       router.push("/cabinet/doctor");
     } 
-     catch (error: unknown) {
-  setErrors({ base: error instanceof Error ? error.message : "Помилка при збереженні." });
+    catch (error: unknown) {
+      setErrors({ base: error instanceof Error ? error.message : "Помилка при збереженні." });
     } finally {
       setLoading(false);
     }
@@ -235,16 +235,24 @@ export default function DoctorProfilePage() {
     <div className="max-w-2xl mx-auto p-4 sm:p-6 bg-white rounded-xl shadow-lg my-6 sm:my-12">
       <h1 className="text-2xl font-semibold mb-6">Заповнення даних лікаря</h1>
       <form onSubmit={onSubmit} noValidate>
-        {/* Фото профіля */}
-        <div className="mb-6">
+        {/* Фото профілю */}
+        <div className="mb-6 border-t border-gray-200 pt-4">
           <label className="block font-medium mb-1">
-            Фото профіля <span className="text-red-600">*</span>
+            Фото профілю <span className="text-red-600">*</span>
+          </label>
+          <label
+            htmlFor="profilePhoto"
+            className="inline-block cursor-pointer bg-green-600 text-white px-4 py-2 rounded-full hover:bg-green-700 transition select-none"
+          >
+            Вибрати фото
           </label>
           <input
             type="file"
+            id="profilePhoto"
             accept="image/*"
             ref={profileInputRef}
             onChange={handleProfilePhotoChange}
+            className="hidden"
           />
           {profilePhotoPreview && (
             <div className="mt-2 w-32 h-32 relative border rounded-xl overflow-hidden shadow">
@@ -259,11 +267,16 @@ export default function DoctorProfilePage() {
                 onClick={removeProfilePhoto}
                 className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm z-10"
                 aria-label="Видалити файл"
-              >×</button>
+              >
+                ×
+              </button>
             </div>
           )}
-          {errors.profilePhoto && <p className="text-red-600 text-sm">{errors.profilePhoto}</p>}
+          {errors.profilePhoto && (
+            <p className="text-red-600 text-sm mt-1">{errors.profilePhoto}</p>
+          )}
         </div>
+
         {showCropper && cropperImage && (
           <ImageCropper
             image={cropperImage}
@@ -520,16 +533,24 @@ export default function DoctorProfilePage() {
         </div>
 
         {/* Дипломи/сертифікати */}
-        <div className="mb-6">
+        <div className="mb-6 border-t border-gray-200 pt-4">
           <label className="block font-medium mb-2">
             Дипломи / Сертифікати / Ліцензії <span className="text-red-600">*</span>
           </label>
+          <label
+            htmlFor="diplomaFiles"
+            className="inline-block cursor-pointer bg-green-600 text-white px-4 py-2 rounded-full hover:bg-green-700 transition select-none"
+          >
+            Вибрати файли
+          </label>
           <input
             type="file"
+            id="diplomaFiles"
             multiple
             accept="image/*,application/pdf"
             ref={diplomaInputRef}
             onChange={handleDiplomaFilesChange}
+            className="hidden"
           />
           {diplomaFiles.length > 0 && (
             <span className="ml-2 text-gray-500">Число файлів: {diplomaFiles.length}</span>

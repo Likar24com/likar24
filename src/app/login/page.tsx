@@ -7,11 +7,13 @@ import { supabase } from "@/lib/supabaseClient";
 export default function LoginPage() {
   const router = useRouter();
 
+  // Login
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
 
+  // Register
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState("");
@@ -103,12 +105,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 max-w-5xl mx-auto gap-10">
-      <div className="flex flex-col md:flex-row md:gap-12 w-full max-w-4xl">
-        {/* Логін */}
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 max-w-5xl mx-auto">
+      <div className="flex flex-col md:flex-row gap-6 md:gap-12 w-full max-w-4xl">
+        {/* LOGIN */}
         <form
           onSubmit={handleLogin}
-          className="flex-1 bg-white p-6 rounded-xl shadow space-y-4 mb-8 md:mb-0"
+          className="flex-1 bg-white p-6 rounded-2xl shadow-lg w-full max-w-md mx-auto mb-8 md:mb-0 flex flex-col"
           noValidate
         >
           <h2 className="text-xl font-semibold mb-4">Вхід</h2>
@@ -130,9 +132,6 @@ export default function LoginPage() {
             className="w-full p-2 border border-gray-300 rounded-lg"
             required
           />
-          <p className="text-sm text-gray-500 mb-2">
-            Пароль повинен містити мінімум 6 символів, одну велику літеру і одну цифру.
-          </p>
           <div className="mb-4 text-right">
             <a
               href="/forgot-password"
@@ -148,12 +147,22 @@ export default function LoginPage() {
           >
             {loginLoading ? "Завантаження..." : "Увійти"}
           </button>
+          {/* Слоган під кнопкою */}
+          <div className="mt-6 flex flex-col items-center">
+            <svg width="32" height="32" fill="none" className="mb-2 text-green-500" viewBox="0 0 32 32">
+              <circle cx="16" cy="16" r="15" stroke="currentColor" strokeWidth="2"/>
+              <path d="M11 16l3 3l7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <p className="text-sm text-gray-400 text-center leading-tight">
+              Отримуйте консультації з будь-якого<br className="hidden sm:inline" /> куточка світу
+            </p>
+          </div>
         </form>
 
-        {/* Реєстрація */}
+        {/* REGISTRATION */}
         <form
           onSubmit={handleRegister}
-          className="flex-1 bg-white p-6 rounded-xl shadow space-y-4"
+          className="flex-1 bg-white p-6 rounded-2xl shadow-lg w-full max-w-md mx-auto flex flex-col"
           noValidate
         >
           <h2 className="text-xl font-semibold mb-4">Реєстрація</h2>

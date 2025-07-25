@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import NextAppointment from "@/components/NextAppointment";
+import NextAppointment from "@/components/patient/NextAppointment";
 import PatientCabinetTabs from "@/components/patient/PatientCabinetTabs";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -44,9 +44,11 @@ export default function PatientCabinetPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <main className="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6">
-        <NextAppointment appointment={appointment} />
-        <PatientCabinetTabs />
+      <main className="flex justify-center py-4 sm:py-8 px-2 sm:px-4">
+        <div className="w-full max-w-4xl flex flex-col gap-4 sm:gap-6">
+          <NextAppointment appointment={appointment} />
+          <PatientCabinetTabs />
+        </div>
       </main>
     </div>
   );

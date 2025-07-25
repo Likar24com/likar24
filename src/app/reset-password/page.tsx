@@ -13,20 +13,16 @@ export default function ResetPasswordPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Збережемо токени в стані
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
 
-  // Витягуємо токени з хеша URL
   useEffect(() => {
     if (typeof window === "undefined") return;
-
     const hash = window.location.hash;
     if (!hash) {
       setError("Token не знайдено. Переконайтеся, що ви перейшли за правильним посиланням.");
       return;
     }
-
     const hashParams = new URLSearchParams(hash.substring(1));
     const at = hashParams.get("access_token");
     const rt = hashParams.get("refresh_token");
@@ -42,7 +38,6 @@ export default function ResetPasswordPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
     setError(null);
     setMessage(null);
 
@@ -50,12 +45,10 @@ export default function ResetPasswordPage() {
       setError("Пароль має містити мінімум 6 символів.");
       return;
     }
-
     if (password !== confirmPassword) {
       setError("Паролі не співпадають.");
       return;
     }
-
     if (!accessToken || !refreshToken) {
       setError("Токени відсутні або недійсні. Спробуйте повторити процес скидання пароля.");
       return;
@@ -92,47 +85,56 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Скидання пароля</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-blue-50 p-4">
+      <div className="w-full max-w-md bg-white p-6 rounded-2xl shadow-xl mx-auto">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-8 text-center text-blue-700">
+          Скидання пароля
+        </h1>
+        {error && (
+          <p className="text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4 text-center">{error}</p>
+        )}
+        {message && (
+          <p className="text-green-700 bg-green-50 rounded-lg px-3 py-2 mb-4 text-center">{message}</p>
+        )}
 
-      {error && <p className="text-red-600 mb-4">{error}</p>}
-      {message && <p className="text-green-600 mb-4">{message}</p>}
-
-      <form onSubmit={handleSubmit} className="w-full bg-white p-6 rounded-lg shadow space-y-4">
-        <label htmlFor="password" className="block font-medium mb-1">
-          Новий пароль
-        </label>
-        <input
-          id="password"
-          type="password"
-          placeholder="Введіть новий пароль"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded-lg"
-          required
-        />
-
-        <label htmlFor="confirmPassword" className="block font-medium mb-1">
-          Підтвердження пароля
-        </label>
-        <input
-          id="confirmPassword"
-          type="password"
-          placeholder="Підтвердіть пароль"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded-lg"
-          required
-        />
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg disabled:opacity-50"
-        >
-          {loading ? "Змінюємо..." : "Змінити пароль"}
-        </button>
-      </form>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="password" className="block font-medium mb-1">
+              Новий пароль
+            </label>
+            <input
+              id="password"
+              type="password"
+              placeholder="Введіть новий пароль"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-lg focus:border-blue-500 outline-none transition"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="confirmPassword" className="block font-medium mb-1">
+              Підтвердження пароля
+            </label>
+            <input
+              id="confirmPassword"
+              type="password"
+              placeholder="Підтвердіть пароль"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-lg focus:border-blue-500 outline-none transition"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition disabled:opacity-50 mt-2"
+          >
+            {loading ? "Змінюємо..." : "Змінити пароль"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
